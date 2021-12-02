@@ -57,6 +57,8 @@
          */
         let hand = [];
         
+        let hp = 850;
+        
         function onStartBattleButton() {
             
         }
@@ -97,12 +99,14 @@
                 
                 ws.close();
             }
+            
+            if(d && d.player_a_health)
+                hp = d.player_a_health;
         }
         
         function startWS() {
             ws = new WebSocket("wss://dueling.epolite.net");
             ws.onmessage = (data) => {
-                console.log(`data: ${data.data}`);
                 onWSData(data.data);
             }
         }
@@ -155,6 +159,10 @@
                 "event_type": "CardPlayEvent",
                 "card_id": card_id,
             }));
+        }
+        
+        function myHP() {
+            
         }
         
         //game functions
