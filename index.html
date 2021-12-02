@@ -260,7 +260,11 @@ function onTurnStart() {
 }
 </div>
 <br>
-<button style="margin-top: 60vh;" onclick="eval(document.getElementById('editor').innerText)">Run your code!</button>
+<button style="margin-top: 60vh;" id="TheCodeRunner" onclick="eval(document.getElementById('editor').innerText);
+document.getElementById('TheCodeRunner').disabled = true
+setTimeout(() => {
+    document.getElementById('TheCodeRunner').disabled = false
+}, 2000)">Run your code!</button>
 
 <p>Results:</p>
 <pre id="results">
