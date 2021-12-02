@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DuelingBots Website</title>
+    <!--code editor lib-->
+    <!--as much as i dislike js extensions like *jax and jquery, codemirror is way too difficult-->
+    <script src="https://pagecdn.io/lib/ace/1.4.12/ace.min.js"></script>
+    <style>
+        body {
+            background-color: #23272aff;
+            color: white;
+        }
+        
+        a {
+            color: wheat;
+        }
+        
+    </style>
+    <style media="screen">
+        #editor {
+            position: absolute;
+            top: 20vh;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            max-width: 800px;
+            max-height: 500px;
+        }
+    </style>
+    <script>
+        
+        //hook into chrome's stupid hotkey reserves
+        window.onbeforeunload = (e) => {
+            e.preventDefault();
+            e.returnValue = "Code you wrote will not be saved.  Please copy elsewhere before exiting.";
+        }
+        
+        document.onkeydown = (e) => {
+            if(!e.ctrlKey) return;
+            
+            if(e.keyCode === 83) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+
+        /**
+         * @type WebSocket
+         */
+        let ws;
+        
+        let onTurnStartFunc;
+        
+        /**
+         * @type {Card[]}
+         */
+        let hand = [];
+        
+        function onStartBattleButton() {
+            
+        }
+        
+        /**
+         * Connect to the server.
+         * @param turnStartFunction {function}
+         */
+        function connect(turnStartFunction) {
+            startWS();
+            
+            setTimeout(() => {
+                ws.send(JSON.stringify({
+                    "connection_type": "bot",
+                    "event_type": "play"
+                }));
+                onTurnStartFunc = turnStartFunction;
+            }, 1000);
+        }
+        
+        /**
+         * @param msg {string}
+         */
+        function onWSData(msg) {
+            const d = JSON.parse(msg);
+            if(d.event_type === "turn_start") {
+                hand = d.cards;
+                onTurnStartFunc();
+            } else if(d.event_type === "card_played_success") {
+                hand = d.hand;
+            } else if(d.event_type === "game_over") {
+                if(d.winner === "a") {
+                    alert("You win!  Check the results box for the game log.");
+                } else {
+                    alert("You lost!  Check the results box for the game log.");
+                }
+                document.getElementById("results").innerText = d.history.join("\n");
+                
+                ws.close();
+            }
+        }
+        
+        function startWS() {
+            ws = new WebSocket("wss://localhost");
+            ws.onmessage = (data) => {
+                console.log(`data: ${data.data}`);
+                onWSData(data.data);
+            }
+        }
+        
+        //internal helper functions
+        
+        function getTypeOfCard(cardID) {
+            if(cardID > 0 && cardID <= 5) //cards 1-5
+                return "damage";
+            if(cardID > 5 && cardID <= 10) //cards 6-10
+                return "healing";
+            if(cardID > 10 && cardID <= 15) //cards 11-15
+                return "defense";
+            return undefined;
+        }
+        
+        class Card {
+            constructor(name, id) {
+                this.name = name;
+                this.id = id;
+            }
+            
+            getCardArtURI() {
+                return `https://duelingbots.github.io/cardart/${this.id}.png`;
+            }
+        }
+        
+        /**
+         * If the user has a card of a specific type
+         * @param type {"healing" | "damage" | "defense"}
+         * @returns {boolean|*}
+         */
+        function hasCardType(type) {
+            for(let i = 0; i < hand.length; i++) {
+                if(getTypeOfCard(hand[i]) === type)
+                    return hand[i];
+            }
+            
+            return false;
+        }
+        
+        /**
+         * @param card_id {number}
+         */
+        function sendCardPlayEvent(card_id) {
+            if(!hasCardOfID(card_id))
+                throw new Error();
+            
+            ws.send(JSON.stringify({
+                "event_type": "CardPlayEvent",
+                "card_id": card_id,
+            }));
+        }
+        
+        //game functions
+        
+        /**
+         * @param card_id {number}
+         */
+        function hasCardOfID(card_id) {
+            for(let i = 0; i < hand.length; i++) {
+                if(hand[i].id === card_id)
+                    return card_id;
+            }
+            return undefined;
+        }
+        
+        function hasHealingCards() {
+            return hasCardType("healing");
+        }
+        
+        function hasDamageCards() {
+            return hasCardType("damage");
+        }
+        
+        function hasDefenseCards() {
+            return hasCardType("defense");
+        }
+        
+        function playRandomCard() {
+            sendCardPlayEvent(hand[Math.floor(Math.random()) * hand.length].id);
+        }
+        
+        function playCardFromID(card_id) {
+            sendCardPlayEvent(card_id);
+        }
+        
+        /**
+         * @param type {"healing" | "damage" | "defense"}
+         */
+        function playRandomCardOfType(type) {
+            switch(type) {
+                case "healing":
+                    if(!hasHealingCards())
+                        throw new Error("There was no healing card in the hand to play.");
+                    break;
+                case "damage":
+                    if(!hasDamageCards())
+                        throw new Error("There was no damage card in the hand to play.");
+                    break;
+                case "defense":
+                    if(!hasHealingCards())
+                        throw new Error("There was no defense card in the hand to play.");
+                    break;
+                default:
+                    throw new Error("playRandomCardOfType must be one of the following: 'healing', 'damage', or 'defense'.");
+            }
+        }
+        
+        //this may need a bit of time to load
+        setTimeout(() => {
+            const editor = ace.edit("editor");
+            editor.setOption("mergeUndoDeltas", "always");
+            editor.session.setTabSize(4);
+            editor.session.setUseSoftTabs(true);
+            editor.session.setMode("ace/mode/javascript");
+        }, 50);
+    </script>
+</head>
+<body>
+<noscript>
+    <h1>you must enable javascript to use this website.</h1>
+</noscript>
+<h1>DuelingBots - an interactive Coding Club meeting!</h1>
+<h2>Here, you can write code to play against other people's bots (or a demo bot!)</h2>
+
+<p>If you want, you can read some <a href="/tutorial.html">brief tutorial here</a>, and <a href="/cards.html">see all 15 cards here</a>.</p>
+<p>Additionally, an example bot has been provided below to get you started.  Have fun!</p>
+
+<div id="editor">
+//this connects you to the server.
+connect(onTurnStart);
+
+//this is run when your turn starts.
+function onTurnStart() {
+    
+    //change the code inside this method!
+    //take advantage of methods such as `myHP(game)` which returns a number
+    //to see if you are low on health, then play a healing card instead.
+    
+    //check the brief tutorial linked above if you haven't already, which outlines many useful methods.
+    //have fun, and remember to use `return` when you use a method whose name starts with "play".
+    
+    if(hasHealingCards(hand)) {
+        //if the bot has a healing card, play a random card of type "healing".
+        return playRandomCardOfType("healing");
+    }
+    
+    if(hasDamageCards(hand)) {
+        return playRandomCardOfType("damage");
+    }
+    
+    //if there is no healing or damage card, play a random card.
+    return playRandomCard();
+}
+</div>
+<br>
+<button style="margin-top: 60vh;" onclick="eval(document.getElementById('editor').innerText)">Run your code!</button>
+
+<p>Results:</p>
+<pre id="results">
+    
+</pre>
+</body>
+</html>

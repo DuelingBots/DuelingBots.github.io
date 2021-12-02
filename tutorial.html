@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Dueling Bot Brief Tutorial</title>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <style>
+        body {
+            background-color: #23272aff;
+            color: white;
+        }
+        
+        a {
+            color: wheat;
+        }
+    </style>
+</head>
+<body>
+<h1>Tutorial for Dueling Bots</h1>
+<h2>The basics</h2>
+<p>Each player starts with 500 HP (Health), and both players attack using cards until their health goes to zero.</p>
+<p><a href="cards.html">You can view all 15 cards here.</a></p>
+<h2>Card Types</h2>
+<p>There are three types of cards:</p>
+<ul>
+    <li>Attack cards - deal damage to your opponent</li>
+    <li>Healing cards - heal yourself</li>
+    <li>Defense cards - protect yourself against an upcoming attack.</li>
+</ul>
+<h2>Card Hands</h2>
+<p>Each turn, you are given 5 random cards.  <b>There may be duplicates in any hand.  The other four will be discarded when you play one card.</b></p>
+<p>This being said, there is no guarantee you will get one of any specific card type.</p>
+<h2>Last, but not least, Card IDs</h2>
+<p>Cards are numbered 1-15.  You can find this on the bottom right of the card.  Simple, no?</p>
+<br><br><br><br><br><br><br><br>
+<h1>Some advanced methods:</h1>
+<p>When you want to use more advanced methods (like playing specific cards):</p>
+<pre>
+playCardFromID(cardID)
+</pre>
+<p>Which plays a specific card.  Before calling this, you should call:</p>
+<pre>
+hasCardOfID(cardID)
+</pre>
+<p>To make sure you can actually play the card, otherwise your bot may crash.</p>
+</body>
+</html>
