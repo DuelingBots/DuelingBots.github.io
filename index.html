@@ -100,7 +100,7 @@
         }
         
         function startWS() {
-            ws = new WebSocket("wss://db.epolite.net");
+            ws = new WebSocket("wss://dueling.epolite.net");
             ws.onmessage = (data) => {
                 console.log(`data: ${data.data}`);
                 onWSData(data.data);
